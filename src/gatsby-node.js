@@ -1,26 +1,15 @@
-const webpack = require("webpack")
+const { fetchContentfulMessages } = require("./fetch-contentful-messages");
+const webpack = require("webpack");
 
-function flattenMessages(nestedMessages, prefix = "") {
-  return Object.keys(nestedMessages).reduce((messages, key) => {
-    let value = nestedMessages[key]
-    let prefixedKey = prefix ? `${prefix}.${key}` : key
+let contentfulData = null;
 
-    if (typeof value === "string") {
-      messages[prefixedKey] = value
-    } else {
-      Object.assign(messages, flattenMessages(value, prefixedKey))
-    }
-
-    return messages
-  }, {})
-}
-
-exports.onCreateWebpackConfig = ({ actions, plugins }, pluginOptions) => {
-  const { redirectComponent = null, languages, defaultLanguage } = pluginOptions
-  if (!languages.includes(defaultLanguage)) {
-    languages.push(defaultLanguage)
+exports.onCreateWebpackConfig = async ({ actions, plugins }, pluginOptions) => {
+  const { redirectComponent = null, defaultLanguage } = pluginOptions
+  contentfulData = contentfulData || await fetchContentfulMessages(pluginOptions);
+  if (!contentfulData.languages.includes(defaultLanguage)) {
+    contentfulData.languages.push(defaultLanguage)
   }
-  const regex = new RegExp(languages.map(l => l.split("-")[0]).join("|"))
+  const regex = new RegExp(contentfulData.languages.map(l => l.split("-")[0]).join("|"))
   actions.setWebpackConfig({
     plugins: [
       plugins.define({
@@ -43,34 +32,17 @@ exports.onCreatePage = async ({ page, actions }, pluginOptions) => {
   if (typeof page.context.intl === "object") {
     return
   }
+
   const { createPage, deletePage } = actions
   const {
-    path = ".",
-    languages = ["en"],
     defaultLanguage = "en",
     redirect = false,
-  } = pluginOptions
+  } = pluginOptions;
 
-  const getMessages = (path, language) => {
-    try {
-      // TODO load yaml here
-      const messages = require(`${path}/${language}.json`)
-
-      return flattenMessages(messages)
-    } catch (error) {
-      if (error.code === "MODULE_NOT_FOUND") {
-        process.env.NODE_ENV !== "test" &&
-          console.error(
-            `[gatsby-plugin-intl] couldn't find file "${path}/${language}.json"`
-          )
-      }
-
-      throw error
-    }
-  }
+  contentfulData = contentfulData || await fetchContentfulMessages(pluginOptions);
 
   const generatePage = (routed, language) => {
-    const messages = getMessages(path, language)
+    const messages = contentfulData.messages[language];
     const newPath = routed ? `/${language}${page.path}` : page.path
     return {
       ...page,
@@ -80,7 +52,7 @@ exports.onCreatePage = async ({ page, actions }, pluginOptions) => {
         language,
         intl: {
           language,
-          languages,
+          languages: contentfulData.languages,
           messages,
           routed,
           originalPath: page.path,
@@ -95,7 +67,7 @@ exports.onCreatePage = async ({ page, actions }, pluginOptions) => {
   deletePage(page)
   createPage(newPage)
 
-  languages.forEach(language => {
+  contentfulData.languages.forEach(language => {
     const localePage = generatePage(true, language)
     const regexp = new RegExp("/404/?$")
     if (regexp.test(localePage.path)) {

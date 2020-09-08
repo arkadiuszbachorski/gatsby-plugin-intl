@@ -1,42 +1,16 @@
-# gatsby-plugin-intl
+# gatsby-plugin-intl-contentful
 
-Internationalize your Gatsby site.
-
-## Features
-
-- Turn your gatsby site into an internationalization-framework out of the box powered by [react-intl](https://github.com/yahoo/react-intl).
-
-- Support automatic redirection based on the user's preferred language in browser provided by [browser-lang](https://github.com/wiziple/browser-lang).
-
-- Support multi-language url routes in a single page component. This means you don't have to create separate pages such as `pages/en/index.js` or `pages/ko/index.js`.
+Internationalize your Gatsby site using **gatsby-plugin-intl** and **Contentful** together. 
 
 ## Why?
 
-When you build multilingual sites, Google recommends using different URLs for each language version of a page rather than using cookies or browser settings to adjust the content language on the page. [(read more)](https://support.google.com/webmasters/answer/182192?hl=en&ref_topic=2370587)
-
-## Starters
-
-Demo: [http://gatsby-starter-default-intl.netlify.com](http://gatsby-starter-default-intl.netlify.com)
-
-Source: [https://github.com/wiziple/gatsby-plugin-intl/tree/master/examples/gatsby-starter-default-intl](https://github.com/wiziple/gatsby-plugin-intl/tree/master/examples/gatsby-starter-default-intl)
-
-
-## Showcase
-
-- [https://picpick.app](https://picpick.app)
-- [https://www.krashna.nl](https://www.krashna.nl) [(Source)](https://github.com/krashnamusika/krashna-site)
-- [https://vaktija.eu](https://vaktija.eu)
-- [https://anhek.dev](https://anhek.dev) [(Source)](https://github.com/anhek/anhek-portfolio)
-- [https://pkhctech.ineo.vn](https://pkhctech.ineo.vn) [(Source)](https://github.com/hoangbaovu/gatsby-pkhctech)
-- [https://www.neonlaw.com](https://www.neonlaw.com) [(Source)](https://github.com/neonlaw/interface)
-
-*Feel free to send us PR to add your project.*
+**gatsby-plugin-intl** is the very good plugin, unless you might want to get rid of repository-based intl messages. This plugin is a fork, which fetches your messages from Contentful. Be sure to visit [original gatsby-plugin-intl](https://github.com/wiziple/gatsby-plugin-intl) for more information!
 
 ## How to use
 
 ### Install package
 
-`npm install --save gatsby-plugin-intl`
+`npm install --save gatsby-plugin-intl-contentful`
 
 ### Add a plugin to your gatsby-config.js
 
@@ -44,120 +18,48 @@ Source: [https://github.com/wiziple/gatsby-plugin-intl/tree/master/examples/gats
 // In your gatsby-config.js
 plugins: [
   {
-    resolve: `gatsby-plugin-intl`,
+    resolve: `gatsby-plugin-intl-contentful`,
     options: {
-      // language JSON resource path
-      path: `${__dirname}/src/intl`,
-      // supported language
-      languages: [`en`, `ko`, `de`],
-      // language file path
+      // default language
       defaultLanguage: `ko`,
       // option to redirect to `/ko` when connecting `/`
       redirect: true,
+      // Contentful space credentials
+      contentfulSpaceId: "your_contentful_space_id",
+      contentfulAccessToken: "your_contentful_access_token",
+
+      // OPTIONAL!
+      // Contentful message Content Type id
+      messageContentType: "message",
+      // Your Contentful message Content Type key field id
+      fieldKey: "key", 
+      // Your Contentful message Content Type value field id
+      fieldValue: "value", 
     },
   },
 ]
 ```
 
-### You'll also need to add language JSON resources to the project.
+### Create Contentful Message Content Model
 
-For example,
+Create a **Message** Content Model with `message` id, which has two required fields:
+* `key` - used as intl object key, for example `callToAction.button`
+* `value` - used as intl object value, which might be localised, for example en: `Click me!`, pl: `Kliknij mnie!`
 
-| language resource file | language |
-| --- | --- |
-| [src/intl/en.json](https://github.com/wiziple/gatsby-plugin-intl/blob/master/examples/gatsby-starter-default-intl/src/intl/en.json) | English |
-| [src/intl/ko.json](https://github.com/wiziple/gatsby-plugin-intl/blob/master/examples/gatsby-starter-default-intl/src/intl/ko.json) | Korean |
-| [src/intl/de.json](https://github.com/wiziple/gatsby-plugin-intl/blob/master/examples/gatsby-starter-default-intl/src/intl/de.json) | German |
+You can find default ids above, but feel free to change them in your `gatsby-config.js` if you want.
 
+#### Example 
 
-### Change your components
+![example](https://github.com/arkadiuszbachorski/gatsby-plugin-intl-contentful/blob/master/examples/example.jpg "Example image")
 
-You can use `injectIntl` HOC on any react components including page components.
+### That's it!
 
-```jsx
-import React from "react"
-import { injectIntl, Link, FormattedMessage } from "gatsby-plugin-intl"
+It all done. Now feed your Contentful with i18n data, simply add how many locales you want and build project. No more useless commits!
 
-const IndexPage = ({ intl }) => {
-  return (
-    <Layout>
-      <SEO
-        title={intl.formatMessage({ id: "title" })}
-      />
-      <Link to="/page-2/">
-        {intl.formatMessage({ id: "go_page2" })}
-        {/* OR <FormattedMessage id="go_page2" /> */}
-      </Link>
-    </Layout>
-  )
-}
-export default injectIntl(IndexPage)
-```
-Or you can use the new `useIntl` hook.
-```jsx
-import React from "react"
-import { useIntl, Link, FormattedMessage } from "gatsby-plugin-intl"
+## How it works
 
-const IndexPage = () => {
-  const intl = useIntl()
-  return (
-    <Layout>
-      <SEO
-        title={intl.formatMessage({ id: "title" })}
-      />
-      <Link to="/page-2/">
-        {intl.formatMessage({ id: "go_page2" })}
-        {/* OR <FormattedMessage id="go_page2" /> */}
-      </Link>
-    </Layout>
-  )
-}
-export default IndexPage
-```
-
-
-## How It Works
-
-Let's say you have two pages (`index.js` and `page-2.js`) in your `pages` directory. The plugin will create static pages for every language.
-
-file | English | Korean | German | Default*
--- | -- | -- | -- | --
-src/pages/index.js | /**en** | /**ko** | /**de** | /
-src/pages/page-2.js | /**en**/page-2 | /**ko**/page-2 | /**de**/page-2 | /page-2
-
-**Default Pages and Redirection**
-
-If redirect option is `true`, `/` or `/page-2` will be redirected to the user's preferred language router. e.g) `/ko` or `/ko/page-2`. Otherwise, the pages will render `defaultLangugage` language. You can also specify additional component to be rendered on redirection page by adding `redirectComponent` option.
-
-
-## Plugin Options
-
-Option | Type | Description
--- | -- | --
-path | string | language JSON resource path
-languages | string[] | supported language keys
-defaultLanguage | string | default language when visiting `/page` instead of `ko/page`
-redirect | boolean | if the value is `true`, `/` or `/page-2` will be redirected to the user's preferred language router. e.g) `/ko` or `/ko/page-2`. Otherwise, the pages will render `defaultLangugage` language.
-redirectComponent | string (optional) | additional component file path to be rendered on with a redirection component for SEO.
-
-
-## Components
-
-To make it easy to handle i18n with multi-language url routes, the plugin provides several components.
-
-To use it, simply import it from `gatsby-plugin-intl`.
-
-Component | Type | Description
--- | -- | --
-Link | component | This is a wrapper around @gatsby’s Link component that adds useful enhancements for multi-language routes. All props are passed through to @gatsby’s Link component.
-navigate | function | This is a wrapper around @gatsby’s navigate function that adds useful enhancements for multi-language routes. All options are passed through to @gatsby’s navigate function.
-changeLocale | function | A function that replaces your locale. `changeLocale(locale, to = null)`
-IntlContextConsumer | component | A context component to get plugin configuration on the component level.
-injectIntl | component | https://github.com/yahoo/react-intl/wiki/API#injection-api
-FormattedMessage | component | https://github.com/yahoo/react-intl/wiki/Components#string-formatting-components
-and more... | | https://github.com/yahoo/react-intl/wiki/Components
-
+Under the hood it works exactly as [original gatsby-plugin-intl](https://github.com/wiziple/gatsby-plugin-intl). The only difference are two Contentful fetches instead of basing on locale JSON files. Firstly plugin builds languages list based on Contentful locales and then combines it with Messages Content Model. 
 
 ## License
 
-MIT &copy; [Daewoong Moon](https://github.com/wiziple)
+MIT &copy; [Arkadiusz Bachorski](https://github.com/arkadiuszbachorski)
